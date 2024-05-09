@@ -253,15 +253,17 @@ def plfit(x, *varargin):
         L = n * log((alpha - 1) / xmin) - alpha * sum(map(lambda X: log(float(X) / xmin), z))
     elif f_dattype == 'INTS':
 
-        x = map(int, x)
+        # x = map(int, x)
         if vec == []:
             for X in range(150, 351):
                 vec.append(X / 100.)  # covers range of most practical
                 # scaling parameters
         zvec = map(zeta, vec)
 
-        xmins = unique(x)
-        xmins.sort()
+        # xmins = unique(x)
+        xmins = list(set(x))
+        # xmins.sort()
+        xmins = sorted(xmins)
         xmins = xmins[0:-1]
         if xminx != []:
             xmins = [min(filter(lambda X: X >= xminx, xmins))]
@@ -299,7 +301,7 @@ def plfit(x, *varargin):
 
         for xm in range(0, len(xmins)):
             xmin = xmins[xm]
-            z = filter(lambda X: X >= xmin, z)
+            z = list(filter(lambda X: X >= xmin, z))
             n = len(z)
             # estimate alpha via direct maximization of likelihood function
 
@@ -308,25 +310,24 @@ def plfit(x, *varargin):
             slogz = sum(map(log, z))
             xminvec = map(float, range(1, xmin))
             for k in range(0, len(vec)):
-                L.append(-vec[k] * float(slogz) - float(n) * log(
-                    float(zvec[k]) - sum(map(lambda X: pow(float(X), -vec[k]), xminvec))))
+                L.append(-vec[k] * float(slogz) - float(n) * log(float(zeta(vec[k])) - sum(map(lambda X: pow(float(X), -vec[k]), xminvec))))
 
             I = L.index(max(L))
             # compute KS statistic
             fit = reduce(lambda X, Y: X + [Y + X[-1]], \
                          (map(lambda X: pow(X, -vec[I]) / (
-                                     float(zvec[I]) - sum(map(lambda X: pow(X, -vec[I]), map(float, range(1, xmin))))),
+                                     float(zeta(vec[k])) - sum(map(lambda X: pow(X, -vec[I]), map(float, range(1, xmin))))),
                               range(xmin, xmax + 1))), [0])[1:]
             cdi = []
             for XM in range(xmin, xmax + 1):
-                cdi.append(len(filter(lambda X: floor(X) <= XM, z)) / float(n))
+                cdi.append(len(list(filter(lambda X: floor(X) <= XM, z))) / float(n))
 
             datA.append(max(map(lambda X: abs(fit[X] - cdi[X]), range(0, xmax - xmin + 1))))
             datB.append(vec[I])
         # select the index for the minimum value of D
         I = datA.index(min(datA))
         xmin = xmins[I]
-        z = filter(lambda X: X >= xmin, x)
+        z = list(filter(lambda X: X >= xmin, x))
         n = len(z)
         alpha = datB[I]
         if finite: alpha = alpha * (n - 1.) / n + 1. / n  # finite-size correction
@@ -334,7 +335,7 @@ def plfit(x, *varargin):
             print
             '(PLFIT) Warning: finite-size bias may be present.\n'
 
-        L = -alpha * sum(map(log, z)) - n * log(zvec[vec.index(max(filter(lambda X: X <= alpha, vec)))] - \
+        L = -alpha * sum(map(log, z)) - n * log(zeta(vec[vec.index(max(filter(lambda X: X <= alpha, vec)))]) - \
                                                 sum(map(lambda X: pow(X, -alpha), range(1, xmin))))
     else:
         print
